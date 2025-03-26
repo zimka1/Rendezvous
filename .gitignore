@@ -1,0 +1,25 @@
+# Node / React Native
+node_modules/
+.expo/
+.expo-shared/
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Build artifacts
+build/
+dist/
+web-build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+CTestTestfile.cmake
+
+# macOS & IDE
+.DS_Store
+.idea/
+.vscode/
+
