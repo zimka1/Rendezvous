@@ -74,6 +74,49 @@ int main() {
         }
     });
 
+    svr.Post("/login", [conn](const Request& req, Response& res) {
+        try {
+            json data = json::parse(req.body);
+            std::string email = data["email"];
+            std::string password = data["password"];
+
+            std::string query = "SELECT id FROM users WHERE email = $1 AND password = $2";
+            const char* params[2] = { email.c_str(), password.c_str() };
+
+            PGresult* result = PQexecParams(
+                    conn,
+                    query.c_str(),
+                    2,
+                    nullptr,
+                    params,
+                    nullptr,
+                    nullptr,
+                    0
+            );
+
+            if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+                res.status = 500;
+                res.set_content("DB error: " + std::string(PQerrorMessage(conn)), "text/plain");
+                PQclear(result);
+                return;
+            }
+
+            if (PQntuples(result) == 0) {
+                res.status = 401;
+                res.set_content("Invalid credentials", "text/plain");
+            } else {
+                res.status = 200;
+                res.set_content("Login successful", "text/plain");
+            }
+
+            PQclear(result);
+        } catch (const std::exception& e) {
+            res.status = 400;
+            res.set_content("JSON error: " + std::string(e.what()), "text/plain");
+        }
+    });
+
+
     std::cout << "Server running at http://localhost:8080\n";
     svr.listen("0.0.0.0", 8080);
 

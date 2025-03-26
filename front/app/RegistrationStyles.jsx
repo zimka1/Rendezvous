@@ -1,4 +1,3 @@
-import { setParams } from "expo-router/build/global-state/routing";
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
@@ -40,6 +39,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     padding: 10,
     width: 45,
+    zIndex: 2,
   },
   toggle_all: {
     backgroundColor: "#333",
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderColor: "black",
+    zIndex: 2,
   },
   toggle_female: {
     textAlign: "center",
@@ -56,6 +57,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
     padding: 10,
     width: 45,
+    zIndex: 2,
   },
   selected_male: {
     backgroundColor: "#00C5F1",
@@ -96,6 +98,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 0,
+  },
+  input_gender: {
+    width: "100%",
   },
   lineWithText: {
     flexDirection: "row",
