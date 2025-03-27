@@ -52,7 +52,7 @@ export default function RegistrationScreen() {
           sex,
           birthday: `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
           password,
-          gender,
+          gender: gender || "",
           preference,
         }),
       });

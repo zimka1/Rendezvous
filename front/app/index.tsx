@@ -50,7 +50,7 @@ export default function LoginScreen() {
 
     const handleLogin = () => {
         if (!email || !password) {
-            Alert.alert("Input Error", "Please enter both email and password.");
+            Alert.alert("Please enter both email and password.");
             return;
         }
         sendLogin();
@@ -103,7 +103,7 @@ export default function LoginScreen() {
                     </LinearGradient>
 
                     <TouchableOpacity
-                        onPress={() => router.push("/registration")} // 👈 убедись, что файл называется registration.tsx
+                        onPress={() => router.push("/Registration")}
                         style={styles.createAccountLink}
                     >
                         <Text style={styles.createAccountText}>Create new account</Text>
