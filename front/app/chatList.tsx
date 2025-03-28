@@ -1,77 +1,103 @@
-import React from "react";
-import styles from "./chatListStyles";
+import React, { useEffect, useState } from "react";
 import {
     View,
     Text,
     FlatList,
-    Image,
     TouchableOpacity,
-    StyleSheet,
+    ActivityIndicator,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { SettingsIcon, ProfileIcon, HeartIcon, ChatIcon } from "./chatListIcons";
+import {
+    SettingsIcon,
+    ProfileIcon,
+    HeartIcon,
+    ChatIcon,
+} from "./chatListIcons";
+import styles from "./chatListStyles";
+import { useWebSocket } from "./context/WebSocketContext"; // ⬅️ глобальный сокет
 
+interface ChatItem {
+    id: number;
+    name: string;
+}
 
 export default function ChatListScreen() {
-    interface ChatItem {
-        id: string;
-        name: string;
-        lastMessage: string;
-        avatar: string | null;
-        unread: number;
-    }
+    const router = useRouter();
+    const [users, setUsers] = useState<ChatItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { socket, sendJson } = useWebSocket(); // ⬅️ используем контекст
 
+    useEffect(() => {
+        if (!socket) return;
 
-    const chats = [
-        {
-            id: "1",
-            name: "Jim Carrey",
-            lastMessage: "Jim: Hello!",
-            avatar: "https://example.com/jim.jpg",
-            unread: 1,
-        },
-        {
-            id: "2",
-            name: "Albert Eshnstein",
-            lastMessage: "You: Hello!",
-            avatar: "https://example.com/albert.jpg",
-            unread: 0,
-        },
-        {
-            id: "3",
-            name: "Ivan Ivanov",
-            lastMessage: "Ivan: Where are you?",
-            avatar: null,
-            unread: 3,
-        },
-        {
-            id: "4",
-            name: "Tom Hanks",
-            lastMessage: "Tom: How are you?",
-            avatar: null,
-            unread: 2,
-        },
-    ];
+        // При открытии соединения — запрашиваем список пользователей
+        if (socket.readyState === WebSocket.OPEN) {
+            sendJson({ command: "user_list_db" });
+        } else {
+            socket.onopen = () => {
+                console.log("🔌 Global WebSocket connected (chatList)");
+                sendJson({ command: "user_list_db" });
+            };
+        }
+
+        const handleMessage = (event: MessageEvent) => {
+            socket.onmessage = (event) => {
+                const raw = event.data?.trim();
+              
+                // ➤ Логируем всё что получаем
+                console.log("📨 WebSocket received:", raw);
+              
+                // ➤ Проверка: если не начинается с JSON-структуры — пропускаем
+                const looksLikeJson = raw.startsWith("{") || raw.startsWith("[");
+                if (!looksLikeJson) {
+                  console.warn("⛔ Пропущено сообщение (не JSON):", raw);
+                  return;
+                }
+              
+                try {
+                  const data = JSON.parse(raw);
+              
+                  if (data.command === "user_list") {
+                    setUsers(data.users);
+                  }
+              
+                  // добавляй сюда другие команды по мере роста
+              
+                } catch (err) {
+                  console.error("❌ JSON Parse error:", err);
+                  console.log("📦 Проблемное сообщение:", raw);
+                }
+              };
+              
+              
+              
+        };
+        
+        
+
+        socket.addEventListener("message", handleMessage);
+
+        return () => {
+            socket.removeEventListener("message", handleMessage);
+        };
+    }, [socket]);
+
     const renderItem = ({ item }: { item: ChatItem }) => (
-        <TouchableOpacity style={styles.chatItem}>
-            {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            ) : (
-                <View style={styles.placeholderAvatar}>
-                    <Text style={styles.avatarInitial}>
-                        {item.name.charAt(0).toUpperCase()}
-                    </Text>
-                </View>
-            )}
+        <TouchableOpacity
+            style={styles.chatItem}
+            onPress={() =>
+                router.push(`/chat/${item.id}?name=${encodeURIComponent(item.name)}`)
+            }
+        >
+            <View style={styles.placeholderAvatar}>
+                <Text style={styles.avatarInitial}>
+                    {item.name.charAt(0).toUpperCase()}
+                </Text>
+            </View>
             <View style={styles.chatTextContainer}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.message}>{item.lastMessage}</Text>
+                <Text style={styles.message}>User ID: {item.id}</Text>
             </View>
-            {item.unread > 0 && (
-                <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>{item.unread}</Text>
-                </View>
-            )}
         </TouchableOpacity>
     );
 
@@ -87,16 +113,19 @@ export default function ChatListScreen() {
                             <SettingsIcon size={30} color="#B3B3B3" />
                         </Text>
                     </View>
-
                 </View>
 
                 {/* Chat List */}
-                <FlatList
-                    data={chats}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderItem}
-                    contentContainerStyle={styles.list}
-                />
+                {loading ? (
+                    <ActivityIndicator size="large" color="#F77F00" />
+                ) : (
+                    <FlatList
+                        data={users}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={renderItem}
+                        contentContainerStyle={styles.list}
+                    />
+                )}
 
                 {/* Footer */}
                 <View style={styles.footer}>
@@ -120,4 +149,3 @@ export default function ChatListScreen() {
         </>
     );
 }
-

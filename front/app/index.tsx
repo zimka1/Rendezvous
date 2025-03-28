@@ -12,9 +12,13 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { GoogleIcon } from "./LoginIcon";
 import { Stack, useRouter } from "expo-router";
+import { useUser } from "./context/UserContext";
+import { useWebSocket } from "./context/WebSocketContext";
 
 export default function LoginScreen() {
     const router = useRouter();
+    const { setUserId } = useUser();
+    const { sendJson } = useWebSocket(); // ✅ Используем sendJson из контекста
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -26,24 +30,26 @@ export default function LoginScreen() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
+                body: JSON.stringify({ email, password }),
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("❌ Login failed:", errorText);
                 Alert.alert("Login Failed", errorText);
             } else {
-                const text = await response.text();
-                console.log("✅ Login successful:", text);
-                Alert.alert("Success", "Welcome!");
-                router.push("/chatList"); // Убедись, что файл app/home.tsx существует
+                const json = await response.json();
+                console.log("✅ Logged in, user ID:", json.user_id);
+                setUserId(json.user_id);
+
+                // ✅ Отправляем user_id в сокет через контекст
+                sendJson({
+                    command: "login",
+                    user_id: json.user_id,
+                });
+
+                router.push("/chatList");
             }
         } catch (error: any) {
-            console.error("❌ Network error:", error);
             Alert.alert("Network Error", error.message);
         }
     };

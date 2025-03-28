@@ -40,7 +40,7 @@ export default function RegistrationScreen() {
 
   const sendRegistration = async () => {
     try {
-      const response = await fetch("http://172.20.10.8/register", {
+      const response = await fetch("http://172.20.10.8:8080/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

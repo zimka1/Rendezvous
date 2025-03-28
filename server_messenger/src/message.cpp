@@ -62,7 +62,7 @@ void markMessagesAsRead(int user_from, int user_to) {
 // Get all messages between two users
 json getAllMessages(int user_from, int user_to) {
     // SQL query to fetch all messages between two users
-    const char* getMessagesSQL = "SELECT user_from, user_to, message FROM messages WHERE (user_from = $1 AND user_to = $2) OR (user_from = $3 AND user_to = $4)";
+    const char* getMessagesSQL = "SELECT id, user_from, user_to, message FROM messages WHERE (user_from = $1 AND user_to = $2) OR (user_from = $3 AND user_to = $4)";
 
     PGresult* res = PQexecParams(db, getMessagesSQL, 4, nullptr,
                                  (const char*[]){std::to_string(user_from).c_str(), std::to_string(user_to).c_str(), std::to_string(user_to).c_str(), std::to_string(user_from).c_str()},
@@ -73,11 +73,13 @@ json getAllMessages(int user_from, int user_to) {
     if (PQresultStatus(res) == PGRES_TUPLES_OK) {
         int rows = PQntuples(res);
         for (int i = 0; i < rows; i++) {
-            int from = std::stoi(PQgetvalue(res, i, 0));
-            int to = std::stoi(PQgetvalue(res, i, 1));
-            const char* messageText = PQgetvalue(res, i, 2);
+            int id = std::stoi(PQgetvalue(res, i, 0));
+            int from = std::stoi(PQgetvalue(res, i, 1));
+            int to = std::stoi(PQgetvalue(res, i, 2));
+            const char* messageText = PQgetvalue(res, i, 3);
 
-            messages.push_back({{"from", from}, {"to", to}, {"message", messageText}});
+            // Add the message to the array
+            messages.push_back({{"id", id}, {"from", from}, {"to", to}, {"message", messageText}});
         }
     } else {
         std::cerr << "Error executing query: " << PQerrorMessage(db) << std::endl;
@@ -91,7 +93,7 @@ json getAllMessages(int user_from, int user_to) {
 // Get only read messages between two users
 json getOnlyReadMessages(int user_from, int user_to) {
     // SQL query to fetch only read messages between two users
-    const char* getMessagesSQL = "SELECT user_from, user_to, message FROM messages WHERE ((user_from = $1 AND user_to = $2) OR (user_from = $3 AND user_to = $4)) AND hasBeenRead = TRUE";
+    const char* getMessagesSQL = "SELECT id, user_from, user_to, message FROM messages WHERE ((user_from = $1 AND user_to = $2) OR (user_from = $3 AND user_to = $4)) AND hasBeenRead = TRUE";
 
     PGresult* res = PQexecParams(db, getMessagesSQL, 4, nullptr,
                                  (const char*[]){std::to_string(user_from).c_str(), std::to_string(user_to).c_str(), std::to_string(user_to).c_str(), std::to_string(user_from).c_str()},
@@ -102,12 +104,13 @@ json getOnlyReadMessages(int user_from, int user_to) {
     if (PQresultStatus(res) == PGRES_TUPLES_OK) {
         int rows = PQntuples(res);
         for (int i = 0; i < rows; i++) {
-            int user_from = std::stoi(PQgetvalue(res, i, 0));
-            int user_to = std::stoi(PQgetvalue(res, i, 1));
-            const char* messageText = PQgetvalue(res, i, 2);
+            int id = std::stoi(PQgetvalue(res, i, 0));
+            int user_from = std::stoi(PQgetvalue(res, i, 1));
+            int user_to = std::stoi(PQgetvalue(res, i, 2));
+            const char* messageText = PQgetvalue(res, i, 3);
 
             // Add the message to the array
-            messages.push_back({{"from", user_from}, {"to", user_to}, {"message", messageText}});
+            messages.push_back({{"id", id}, {"from", user_from}, {"to", user_to}, {"message", messageText}});
         }
     } else {
         std::cerr << "Error executing query: " << PQerrorMessage(db) << std::endl;
@@ -120,7 +123,7 @@ json getOnlyReadMessages(int user_from, int user_to) {
 // Get only unread messages between two users
 json getOnlyUnreadMessages(int user_from, int user_to) {
     // SQL query to fetch only unread messages between two users
-    const char* getMessagesSQL = "SELECT user_from, user_to, message FROM messages WHERE ((user_from = $1 AND user_to = $2) OR (user_from = $3 AND user_to = $4)) AND hasBeenRead = FALSE";
+    const char* getMessagesSQL = "SELECT id, user_from, user_to, message FROM messages WHERE ((user_from = $1 AND user_to = $2) OR (user_from = $3 AND user_to = $4)) AND hasBeenRead = FALSE";
 
     PGresult* res = PQexecParams(db, getMessagesSQL, 4, nullptr,
                                  (const char*[]){std::to_string(user_from).c_str(), std::to_string(user_to).c_str(), std::to_string(user_to).c_str(), std::to_string(user_from).c_str()},
@@ -131,11 +134,13 @@ json getOnlyUnreadMessages(int user_from, int user_to) {
     if (PQresultStatus(res) == PGRES_TUPLES_OK) {
         int rows = PQntuples(res);
         for (int i = 0; i < rows; i++) {
-            int user_from = std::stoi(PQgetvalue(res, i, 0));
-            int user_to = std::stoi(PQgetvalue(res, i, 1));
-            const char* messageText = PQgetvalue(res, i, 2);
+            int id = std::stoi(PQgetvalue(res, i, 0));
+            int user_from = std::stoi(PQgetvalue(res, i, 1));
+            int user_to = std::stoi(PQgetvalue(res, i, 2));
+            const char* messageText = PQgetvalue(res, i, 3);
 
-            messages.push_back({{"from", user_from}, {"to", user_to}, {"message", messageText}});
+            // Add the message to the array
+            messages.push_back({{"id", id}, {"from", user_from}, {"to", user_to}, {"message", messageText}});
         }
     } else {
         std::cerr << "Error executing query: " << PQerrorMessage(db) << std::endl;

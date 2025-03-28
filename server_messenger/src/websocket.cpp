@@ -79,59 +79,33 @@ void process_registration(json parsed_data, uWS::WebSocket<false, true, UserData
 
 // Process login and send previous messages
 void process_login(json parsed_data, uWS::WebSocket<false, true, UserData> *ws) {
-    // Extract nickname and password from the parsed JSON data
-    string nickname = parsed_data["nickname"];
-    string password = parsed_data["password"];
+    // Просто получаем user_id из сообщения
+    int user_id = parsed_data["user_id"];
 
-    // Query the database for the user
-    const char* sql = "SELECT id, nickname, password FROM users WHERE nickname = $1";
-    PGresult* res = PQexecParams(db, sql, 1, nullptr, (const char*[]){nickname.c_str()}, nullptr, nullptr, 0);
+    // Сохраняем в user data
+    auto* udata = ws->getUserData();
+    udata->id = user_id;
+    udata->hisChat = "user" + std::to_string(user_id);
 
-    // Check if the query execution was successful
-    if (PQresultStatus(res) == PGRES_TUPLES_OK && PQntuples(res) > 0) {
-        // Extract user data from the query result
-        int id = stoi(PQgetvalue(res, 0, 0));
-        const char* dbName = PQgetvalue(res, 0, 1);
-        const char* dbPassword = PQgetvalue(res, 0, 2);
+    // Подписываем на публичный и личный канал
+    ws->subscribe("public");
+    ws->subscribe(udata->hisChat);
 
-        // Validate the password
-        if (password == dbPassword && nickname == dbName) {
-            auto* udata = ws->getUserData();
-            udata->id = id;
-            udata->nickname = nickname;
-            udata->password = password;
-            udata->hisChat = "user" + to_string(udata->id);
+    // Добавляем в список подключённых
+    connectedUsers[user_id] = true;
 
-            // Send a response to the client
-            json response = {
-                    {"command", "logged_in"},
-                    {"user_id", udata->id},
-                    {"name", udata->nickname},
-            };
-            ws->send(response.dump(), uWS::OpCode::TEXT);
+    // Ответ клиенту
+    json response = {
+            {"command", "logged_in"},
+            {"user_id", user_id}
+    };
+    ws->send(response.dump(), uWS::OpCode::TEXT);
 
-            // Subscribe the user to the public channel and their private channel
-            ws->subscribe("public");
-            ws->subscribe(udata->hisChat);
-
-            // Add the user to the connected users map
-            connectedUsers[udata->id] = true;
-
-            // Log the login event
-            cout << "User " << udata->nickname << " logged in with ID: " << udata->id << endl;
-            ws->publish("public", "User " + udata->nickname + " logged in");
-        } else if (password != dbPassword) {
-            // Send a login failed response (wrong password)
-            json response = {{"command", "login_failed"}, {"fail", "password"}};
-            ws->send(response.dump(), uWS::OpCode::TEXT);
-        }
-    } else {
-        // Send a login failed response (user not found)
-        json response = {{"command", "login_failed"}, {"fail", "name"}};
-        ws->send(response.dump(), uWS::OpCode::TEXT);
-    }
-    PQclear(res);
+    // Лог
+    std::cout << "✅ User logged in with ID: " << user_id << std::endl;
+    ws->publish("public", "User " + std::to_string(user_id) + " logged in");
 }
+
 
 // Process logout
 void process_logout(uWS::WebSocket<false, true, UserData> *ws) {
@@ -161,7 +135,7 @@ void process_user_list_from_db(uWS::WebSocket<false, true, UserData> *ws) {
     auto* udata = ws->getUserData();
 
     // Query the database for all users
-    const char* sql = "SELECT id, firstname, lastname, nickname FROM users";
+    const char* sql = "SELECT id, name FROM users";
     PGresult* res = PQexec(db, sql);
 
     json userList = json::array();
@@ -172,13 +146,11 @@ void process_user_list_from_db(uWS::WebSocket<false, true, UserData> *ws) {
         for (int i = 0; i < rows; i++) {
             // Extract user data from the query result
             int id = stoi(PQgetvalue(res, i, 0));
-            const char* firstname = PQgetvalue(res, i, 1);
-            const char* lastname = PQgetvalue(res, i, 2);
-            const char* nickname = PQgetvalue(res, i, 3);
+            const char* name = PQgetvalue(res, i, 1);
 
             // Exclude the current user from the list
             if (id != udata->id) {
-                userList.push_back({{"id", id}, {"nickname", nickname}, {"firstname", firstname}, {"lastname", lastname}});
+                userList.push_back({{"id", id}, {"name", name}});
             }
         }
     } else {
@@ -191,7 +163,10 @@ void process_user_list_from_db(uWS::WebSocket<false, true, UserData> *ws) {
             {"command", "user_list"},
             {"users", userList}
     };
-    ws->send(response.dump(), uWS::OpCode::TEXT);
+    std::string msg = json({{"command", "user_list"}, {"users", userList}}).dump();
+    std::cout << "Sending to client: " << msg << std::endl;
+    ws->send(msg, uWS::OpCode::TEXT);
+
 }
 
 // Process get messages
@@ -200,6 +175,7 @@ void process_get_messages(json parsed_data, uWS::WebSocket<false, true, UserData
     auto* udata = ws->getUserData();
     int user_from = udata->id;
     int user_to = parsed_data["user_id"];
+    cout << user_from << ' ' << user_to << endl;
     int flagMarkMessagesAsRead = parsed_data["markMessagesAsRead"];
 
     // If the flag is set, fetch read and unread messages separately

@@ -164,7 +164,8 @@ int main() {
                         std::string email = parsed["email"];
                         std::string password = parsed["password"];
 
-                        const char* query = "SELECT password_salt, password_hash FROM users WHERE email = $1";
+                        // ⬅️ ВЫБИРАЕМ ТЕПЕРЬ ТАКЖЕ `id`
+                        const char* query = "SELECT id, password_salt, password_hash FROM users WHERE email = $1";
                         const char* params[1] = { email.c_str() };
 
                         PGresult* result = PQexecParams(conn, query, 1, nullptr, params, nullptr, nullptr, 0);
@@ -177,8 +178,10 @@ int main() {
                             return;
                         }
 
-                        std::string salt_hex = PQgetvalue(result, 0, 0);
-                        std::string hash_hex = PQgetvalue(result, 0, 1);
+                        // ⬅️ ДОСТАЁМ ID и пароли
+                        int user_id = std::stoi(PQgetvalue(result, 0, 0));
+                        std::string salt_hex = PQgetvalue(result, 0, 1);
+                        std::string hash_hex = PQgetvalue(result, 0, 2);
                         PQclear(result);
 
                         if (!verify_password(password, salt_hex, hash_hex)) {
@@ -188,9 +191,15 @@ int main() {
                             return;
                         }
 
+                        // ⬅️ ОТПРАВЛЯЕМ JSON с user_id
+                        json response = {
+                                {"user_id", user_id}
+                        };
                         res->writeStatus("200 OK")
-                                ->writeHeader("Content-Type", "text/plain")
-                                ->end("Login successful");
+                                ->writeHeader("Content-Type", "application/json")
+                                ->end(response.dump());
+
+
 
                     } catch (const std::exception& e) {
                         if (!res->hasResponded()) {
@@ -208,11 +217,13 @@ int main() {
 
 
 
+
                     // === WebSocket ===
             .ws<UserData>("/*", {
                     .idleTimeout = 30,
                     .open = [](auto* ws) {
-                        ws->send("Welcome to BreezeTalk");
+                        ws->send("Welcome to Rendezvous");
+                        std::cout << "Welcome to Rendezvous";
                         printUsersTable(db);
                     },
                     .message = [](auto* ws, std::string_view message, uWS::OpCode opCode) {
