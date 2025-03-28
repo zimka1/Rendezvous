@@ -1,0 +1,11 @@
+{
+  "name": "mtaa-server",
+  "version": "0.1.0",
+  "dependencies": [
+    "libpq",
+    "openssl",
+    "nlohmann-json",
+    "libuv",
+    "usockets"
+  ]
+}

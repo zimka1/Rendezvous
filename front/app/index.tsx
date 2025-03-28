@@ -21,7 +21,7 @@ export default function LoginScreen() {
 
     const sendLogin = async () => {
         try {
-            const response = await fetch("http://147.175.161.225:8080/login", {
+            const response = await fetch("http://172.20.10.8:8080/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -40,7 +40,7 @@ export default function LoginScreen() {
                 const text = await response.text();
                 console.log("✅ Login successful:", text);
                 Alert.alert("Success", "Welcome!");
-                router.push("/home"); // Убедись, что файл app/home.tsx существует
+                router.push("/chatList"); // Убедись, что файл app/home.tsx существует
             }
         } catch (error: any) {
             console.error("❌ Network error:", error);
