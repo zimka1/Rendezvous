@@ -25,7 +25,7 @@ import React, {
     const [socket, setSocket] = useState<WebSocket | null>(null); // ✅ добавлено
   
     useEffect(() => {
-      const ws = new WebSocket("ws://172.20.10.8:8080");
+      const ws = new WebSocket("ws://147.175.161.225:8080");
       socketRef.current = ws;
       setSocket(ws); // ✅ сохраняем в стейт, чтобы триггерить ререндер
   

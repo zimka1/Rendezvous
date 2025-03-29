@@ -224,15 +224,11 @@ void process_get_last_message(json parsed_data, uWS::WebSocket<false, true, User
     // Fetch the last message between the users
     json lastMessage = getLastMessage(user_from, user_to);
     if (!lastMessage.empty()) {
-        // Fetch sender's information
-        json userInfo_from = getUserInfo(lastMessage["user_from"]);
-
         // Send the last message to the client
         json response = {
                 {"command", "last_message"},
                 {"user_from", lastMessage["user_from"]},
                 {"user_to", lastMessage["user_to"]},
-                {"userInfo_from", userInfo_from},
                 {"message", lastMessage["message"]}
         };
         ws->send(response.dump(), uWS::OpCode::TEXT);
@@ -242,7 +238,6 @@ void process_get_last_message(json parsed_data, uWS::WebSocket<false, true, User
                 {"command", "last_message"},
                 {"user_from", udata->id},
                 {"user_to", user_to},
-                {"userInfo_from", ""},
                 {"message", ""}
         };
         ws->send(response.dump(), uWS::OpCode::TEXT);

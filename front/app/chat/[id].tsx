@@ -51,7 +51,7 @@ export default function ChatScreen() {
                     data.command === "onlyUnreadMessages"
                 ) {
                     const adapted = data.messages.map((msg: any) => ({
-                        id: msg.id.toString(),
+                        id: `srv-${msg.id}`,
                         text: msg.message,
                         fromMe: msg.from === userId,
                     }));
@@ -152,7 +152,7 @@ export default function ChatScreen() {
                     <View style={styles.container}>
                         {/* Header */}
                         <View style={styles.header}>
-                            <TouchableOpacity onPress={() => router.back()}>
+                            <TouchableOpacity onPress={() => router.push("../ChatList")}>
                                 <Ionicons name="arrow-back" size={24} color="#FF5F7E" />
                             </TouchableOpacity>
                             <Text style={styles.headerTitle}>{name}</Text>
